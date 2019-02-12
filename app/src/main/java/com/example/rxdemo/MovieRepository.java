@@ -7,14 +7,7 @@ import com.example.rxdemo.Models.Movies;
 import com.example.rxdemo.Network.OAuthManager;
 
 import java.util.ArrayList;
-import java.util.List;
-
-import io.reactivex.Observable;
-import io.reactivex.ObservableEmitter;
-import io.reactivex.ObservableOnSubscribe;
 import io.reactivex.Single;
-import io.reactivex.SingleEmitter;
-import io.reactivex.SingleOnSubscribe;
 
 
 public class MovieRepository {

@@ -32,7 +32,6 @@ import io.reactivex.schedulers.Schedulers;
 public class MovieRecycleAdapter extends RecyclerView.Adapter<MovieRecycleAdapter.MyViewHolder> {
 
 private List<Movies> movies=null;
-private List<Movies> originalmovies=null;
 private ListClickListner event;
 private Context cn;
 
@@ -95,72 +94,7 @@ private Context cn;
     public void notifyData(List<Movies> weatherList){
         movies.clear();
         movies.addAll(weatherList);
-        originalmovies=new ArrayList<>();
-        originalmovies.addAll(weatherList);
         notifyDataSetChanged();
     }
 
-    public void setFilter(final String str){
-        movies.clear();
-        if(!TextUtils.isEmpty(str)){
-                getListObservable().subscribeOn(Schedulers.io())
-                    .observeOn(AndroidSchedulers.mainThread())
-                    .filter(new Predicate<Movies>() {
-                        @Override
-                        public boolean test(Movies s) throws Exception {
-                            return s.getTitle().toLowerCase().contains(str.toLowerCase());
-                        }
-                    })
-                    .subscribeWith(observer);
-        }else{
-            movies.addAll(originalmovies);
-            notifyDataSetChanged();
-        }
-
-    }
-
-    private Observable<Movies> getListObservable() {
-
-
-        return Observable.create(new ObservableOnSubscribe<Movies>() {
-            @Override
-            public void subscribe(ObservableEmitter<Movies> emitter) throws Exception {
-                for (Movies note : originalmovies) {
-                    if (!emitter.isDisposed()) {
-                        emitter.onNext(note);
-                    }
-                }
-
-                if (!emitter.isDisposed()) {
-                    emitter.onComplete();
-                }
-            }
-        });
-
-
-    }
-
-    Observer<Movies> observer = new Observer<Movies>(){
-        Disposable disposable;
-        @Override
-        public void onSubscribe(Disposable d) {
-            disposable=d;
-        }
-
-        @Override
-        public void onNext(Movies value) {
-            movies.add(value);
-        }
-
-        @Override
-        public void onError(Throwable e) {
-
-        }
-
-        @Override
-        public void onComplete() {
-            notifyDataSetChanged();
-            disposable.dispose();
-        }
-    };
 }

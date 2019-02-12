@@ -1,21 +1,14 @@
 package com.example.rxdemo.Network;
 
 import com.example.rxdemo.Models.Movies;
-import com.example.rxdemo.component.ApiCallback;
 import com.google.gson.Gson;
 import com.jakewharton.retrofit2.adapter.rxjava2.RxJava2CallAdapterFactory;
 
 import java.util.ArrayList;
-import java.util.List;
 
-import io.reactivex.Observable;
 import io.reactivex.Single;
-import io.reactivex.functions.Function;
-import io.reactivex.schedulers.Schedulers;
 import okhttp3.OkHttpClient;
 import retrofit2.Call;
-import retrofit2.Callback;
-import retrofit2.Response;
 import retrofit2.Retrofit;
 import retrofit2.converter.gson.GsonConverterFactory;
 import retrofit2.http.GET;

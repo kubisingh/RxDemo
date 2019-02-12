@@ -23,23 +23,17 @@ import android.widget.ImageView;
 
 import com.example.rxdemo.Models.Movies;
 import com.example.rxdemo.UIUtils.MovieRecycleAdapter;
+import com.example.rxdemo.component.GenerateList;
 import com.example.rxdemo.component.ListClickListner;
-import com.jakewharton.rxbinding.view.RxView;
-import com.jakewharton.rxbinding.widget.RxTextView;
+import com.jakewharton.rxbinding2.view.RxView;
+import com.jakewharton.rxbinding2.widget.RxTextView;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
-import io.reactivex.Observer;
-import io.reactivex.SingleObserver;
-import io.reactivex.android.plugins.RxAndroidPlugins;
-import io.reactivex.android.schedulers.AndroidSchedulers;
-import io.reactivex.disposables.Disposable;
+import io.reactivex.disposables.CompositeDisposable;
 import io.reactivex.functions.Consumer;
-import io.reactivex.internal.observers.SubscriberCompletableObserver;
-import io.reactivex.schedulers.Schedulers;
-import rx.Subscription;
-import rx.functions.Action1;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -48,6 +42,7 @@ public class MainActivity extends AppCompatActivity {
     MovieRecycleAdapter adapter;
     EditText txt;
     ImageView cancel;
+    CompositeDisposable compositeDisposable;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -60,84 +55,45 @@ public class MainActivity extends AppCompatActivity {
         cancel = (ImageView) toolbar.findViewById(R.id.clear);
 
         movieViewModel= ViewModelProviders.of(MainActivity.this).get(MovieViewModel.class);
+        movieViewModel.setListUpdateListner(listnerList);
         adapter = new MovieRecycleAdapter(MainActivity.this,new ArrayList<Movies>(),listClickListner);
         RecyclerView.LayoutManager mLayoutManager = new LinearLayoutManager(this);
         recyclerView.setLayoutManager(mLayoutManager);
         recyclerView.setItemAnimator(new DefaultItemAnimator());
         recyclerView.setAdapter(adapter);
+        compositeDisposable=new CompositeDisposable();
 
 
-        movieViewModel.getMovieData().subscribeOn(Schedulers.io())
-                .observeOn(AndroidSchedulers.mainThread())
-                .subscribe(observer);
-
-      txt.addTextChangedListener(new TextWatcher() {
-          @Override
-          public void beforeTextChanged(CharSequence s, int start, int count, int after) {
-
-          }
-
-          @Override
-          public void onTextChanged(CharSequence s, int start, int before, int count) {
-              String str = txt.getText().toString().trim();
-              if(TextUtils.isEmpty(str)){
-                  cancel.setVisibility(View.GONE);
-                  adapter.setFilter("");
-              }else{
-                  cancel.setVisibility(View.VISIBLE);
-                  adapter.setFilter(str);
-              }
-          }
-
-          @Override
-          public void afterTextChanged(Editable s) {
-
-          }
-      });
-
-
-
-        RxView.clicks(cancel).subscribe(new Action1<Void>() {
+        compositeDisposable.add(RxTextView.textChanges(txt).debounce(100,TimeUnit.MILLISECONDS).subscribe(new Consumer<CharSequence>() {
             @Override
-            public void call(Void aVoid) {
+            public void accept(CharSequence charSequence) throws Exception {
+                updateView(charSequence.toString());
+            }
+        }));
+
+        compositeDisposable.add(RxView.clicks(cancel).subscribe(new Consumer<Object>() {
+            @Override
+            public void accept(Object o) throws Exception {
                 cancel.setVisibility(View.GONE);
                 txt.setText("");
             }
-        });
-
+        }));
 
     }
 
-
+    GenerateList listnerList = new GenerateList() {
+        @Override
+        public void updateList(List<Movies> value) {
+            if(value!=null)
+                adapter.notifyData(value);
+        }
+    };
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
-
+        compositeDisposable.dispose();
     }
-
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        // Inflate the menu; this adds items to the action bar if it is present.
-        getMenuInflater().inflate(R.menu.menu_main, menu);
-        return true;
-    }
-
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        // Handle action bar item clicks here. The action bar will
-        // automatically handle clicks on the Home/Up button, so long
-        // as you specify a parent activity in AndroidManifest.xml.
-        int id = item.getItemId();
-
-        //noinspection SimplifiableIfStatement
-        if (id == R.id.action_settings) {
-            return true;
-        }
-
-        return super.onOptionsItemSelected(item);
-    }
-
 
     ListClickListner listClickListner = new ListClickListner() {
         @Override
@@ -146,29 +102,19 @@ public class MainActivity extends AppCompatActivity {
         }
     };
 
-
-    SingleObserver<List<Movies>> observer = new SingleObserver<List<Movies>>() {
-        Disposable disposable;
-        @Override
-        public void onSubscribe(Disposable d) {
-            disposable =d;
-        }
-
-        @Override
-        public void onSuccess(final List<Movies> value) {
-            MainActivity.this.runOnUiThread(new Runnable() {
-                @Override
-                public void run() {
-                    adapter.notifyData(value);
-                    disposable.dispose();
+    private void updateView(final String str){
+        MainActivity.this.runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                if(TextUtils.isEmpty(str)){
+                    cancel.setVisibility(View.GONE);
+                    movieViewModel.filterList("");
+                }else{
+                    cancel.setVisibility(View.VISIBLE);
+                    movieViewModel.filterList(str);
                 }
-            });
-        }
-
-        @Override
-        public void onError(Throwable e) {
-
-        }
-    };
+            }
+        });
+    }
 
 }
